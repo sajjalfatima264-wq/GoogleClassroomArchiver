@@ -1,0 +1,38 @@
+import os
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+
+SCOPES = [
+    'https://www.googleapis.com/auth/classroom.courses.readonly',
+    'https://www.googleapis.com/auth/classroom.student-submissions.me.readonly',
+    'https://www.googleapis.com/auth/classroom.topics.readonly',
+    'https://www.googleapis.com/auth/drive.readonly'
+]
+
+_cached_creds = None
+
+def get_credentials():
+    global _cached_creds
+    if _cached_creds and _cached_creds.valid:
+        return _cached_creds
+    creds = None
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            print("Token expired. Refreshing silently...")
+            creds.refresh(Request())
+        else:
+            print("No valid token found. Opening browser for login...")
+            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
+    print("Authentication successful!")
+    _cached_creds = creds
+    return creds
+
+if __name__ == '__main__':
+    test_creds = get_credentials()
+    print("Authenticated as: " + test_creds.token.split('.')[0] + "... (Token truncated for security)")
